@@ -1,6 +1,6 @@
 # OpenWrt for Fritz!Box 7490
 
-Custom OpenWrt firmware build for the AVM Fritz!Box 7490 with WiFi support. This repository includes automated builds via GitHub Actions and supports both OpenWrt 24.10 and 25.12.4 versions.
+Custom OpenWrt firmware build for the AVM Fritz!Box 7490 with WiFi support. This repository only includes automated builds via GitHub Actions and supports both OpenWrt 24.10 and 25.12.4 versions.
 
 ## Overview
 
@@ -24,20 +24,20 @@ The build includes custom patches, pre-configured network settings, WiFi mesh su
 
 ```
 .
-├── patches/                    # Custom patches for Fritz!Box 7490 support
+├── patches/                   # Custom patches for Fritz!Box 7490 support
 │   ├── 0001-*.patch           # Lantiq port 5 configuration for WASP
 │   ├── 0002-0004-*.patch      # AVM WASP kernel module
 │   ├── 0005-*.patch           # ATH79 support for Fritz!Box 3490/5490/7490
 │   ├── 0008-*.patch           # ath9k EEPROM extraction
 │   ├── 0009-*.patch           # ath9k/ath10k calibration placeholders
 │   └── 0010-0011-*.patch      # USB and WASP firmware placeholders
-├── firmware/                   # Required firmware files (YOU MUST OBTAIN THESE)
+├── firmware/                  # Required firmware files (YOU NEED TO GET SOME)
 │   ├── ath9k-eeprom-ahb-18100000.wmac.bin   # Extract from running Lantiq
 │   ├── cal-pci-0000:00:00.0.bin             # Extract from running Lantiq
-│   ├── ath_tgt_fw1.fw                       # Extract from AVM stock firmware
-│   ├── lantiq-vrx200-b.bin                  # Extract from AVM stock firmware
-│   └── xhcifw.mem                           # From WebArchive
-├── files/                      # Custom configuration files
+│   ├── ath_tgt_fw1.fw                       # Provided in the latest tarballs from AVM (included)
+│   ├── lantiq-vrx200-b.bin                  # From OpenWrt repository
+│   └── xhcifw.mem                           # From GitHub (included)
+├── files/                     # Custom configuration files
 │   └── etc/
 │       ├── rc.local.template  # Startup script for WASP initialization
 │       ├── config/            # UCI configuration files
@@ -70,24 +70,21 @@ The build includes custom patches, pre-configured network settings, WiFi mesh su
 - GNU/Linux, BSD, or macOS with case-sensitive filesystem
 - Build tools: `gcc-6+`, `binutils`, `make 4.1+`, `python3.7+`, `perl`, `rsync`, `unzip`
 - Git, `wget`, `curl`
-- For local builds with `act`: [act](https://github.com/nektos/act) (GitHub Actions runner)
 
 ### Required Firmware Files
 
 **⚠️ Legal Notice**: Due to licensing restrictions, proprietary firmware files cannot be distributed in this repository. You must obtain them yourself from AVM stock firmware or other legal sources.
 
 You need the following firmware files:
-- `xhcifw.mem` - Renesas USB 3.0 controller firmware
-- `ath_tgt_fw1.fw` - Atheros target firmware for WiFi (WASP)
 - `ath9k-eeprom-ahb-18100000.wmac.bin` - WiFi calibration data (extracted from running system)
 - `cal-pci-0000:00:00.0.bin` - WiFi calibration data (extracted from running system)
 - `lantiq-vrx200-b.bin` - DSL-Modem Firmware for Annex B
 
 See the [Extracting Required Firmware Files](#extracting-required-firmware-files) section below for detailed instructions.
 
-## Build Methods
+## Build Method
 
-### Method 1: GitHub Actions (Recommended)
+### GitHub Actions
 
 1. **Fork this repository** and set up secrets:
    ```bash
@@ -110,123 +107,6 @@ See the [Extracting Required Firmware Files](#extracting-required-firmware-files
    - Firmware images will be available as workflow artifacts
    - Both Lantiq and WASP images are built and integrated automatically
 
-### Method 2: Local Build with act
-
-Run GitHub Actions workflow locally using `act`:
-
-```bash
-# Syntax: ./run-local.sh [openwrt_version] [clean_build] [update_sources] [build_target]
-# Defaults: 25.12.4, true, true, both
-
-# Build both targets with defaults
-./run-local.sh
-
-# Build specific version
-./run-local.sh 24.10
-
-# Build only Lantiq target
-./run-local.sh 25.12.4 true true lantiq
-
-# Build only WASP target
-./run-local.sh 25.12.4 false false wasp
-```
-
-**Note**: Edit `run-local.sh` and set the correct `HOMEDIR` and `REPO` variables for your environment.
-
-### Method 3: Manual Build
-
-If you prefer to build manually following the traditional OpenWrt workflow:
-
-#### Step 1: Clone OpenWrt and Apply Patches
-
-```bash
-git clone https://git.openwrt.org/openwrt/openwrt.git
-cd openwrt
-git checkout v24.10.0  # or v25.12.4
-
-# Apply patches
-for patch in ../patches/*.patch; do
-  git apply "$patch"
-done
-
-# Update feeds
-./scripts/feeds update -a
-./scripts/feeds install -a
-```
-
-#### Step 2: Build Lantiq Image
-
-```bash
-# Copy Lantiq configuration
-cp ../.config-lantiq-24.10 .config  # or .config-lantiq-25.12.4
-
-# Configure build
-make menuconfig
-# Target System: Lantiq
-# Subtarget: XRX200
-# Target Profile: AVM FRITZ!Box 7490 (Micron or Other NAND)
-
-# Build
-make -j$(nproc) defconfig download clean world
-```
-
-#### Step 3: Flash and Extract WiFi Calibration Data
-
-1. Flash the Lantiq image to your Fritz!Box 7490
-2. Boot the device and extract calibration files:
-   ```bash
-   scp root@192.168.1.1:/lib/firmware/ath9k-eeprom-ahb-18100000.wmac.bin firmware/
-   scp root@192.168.1.1:/lib/firmware/ath10k/cal-pci-0000:00:00.0.bin firmware/
-   ```
-
-#### Step 4: Build WASP Image
-
-```bash
-# Copy WASP configuration
-cp ../.config-wasp-24.10 .config  # or .config-wasp-25.12.4
-
-# Configure build
-make menuconfig
-# Target System: Atheros ATH79
-# Subtarget: Generic
-# Target Profile: AVM FRITZ!Box 3490/5490/7490 WASP
-
-# Build
-make -j$(nproc) defconfig download clean world
-```
-
-#### Step 5: Integrate WASP into Lantiq
-
-Copy the WASP initramfs image and rebuild Lantiq with it embedded:
-
-```bash
-# Copy WASP initramfs
-cp bin/targets/ath79/generic/openwrt-ath79-generic-avm_fritz3490-wasp-initramfs-kernel.bin \
-   ../firmware/wasp-image.bin
-
-# Switch back to Lantiq config and rebuild
-cp ../.config-lantiq-24.10 .config
-make -j$(nproc) defconfig download clean world
-```
-
-#### Step 6: Configure Custom Files
-
-Before the final build, customize template files in `files/etc/`:
-
-```bash
-# Replace placeholders in template files
-cd files/etc
-sed -i 's/__WIFI_SSID__/YourSSID/g' rc.local.template config/network.template
-sed -i 's/__WIFI_PASSWORD__/YourPassword/g' rc.local.template
-sed -i 's/__MESH_PASSWORD__/YourMeshPassword/g' rc.local.template
-
-# Rename templates
-mv rc.local.template rc.local
-mv config/network.template config/network
-mv config/ddns.template config/ddns
-mv dropbear/authorized_keys.template dropbear/authorized_keys
-```
-
 ## Extracting Required Firmware Files
 
 **⚠️ Important**: Due to licensing restrictions, this repository cannot include proprietary firmware files. You must extract them yourself from legal sources.
@@ -235,102 +115,10 @@ mv dropbear/authorized_keys.template dropbear/authorized_keys
 
 The Fritz!Box 7490 requires several proprietary firmware files for full functionality:
 
-1. **USB3 Firmware** (`xhcifw.mem` / `renesas_usb_fw.mem`) - Renesas USB 3.0 controller
-2. **WASP Firmware** (`ath_tgt_fw1.fw` / `netboot.fw`) - Atheros WiFi processor
-3. **WiFi Calibration Data** - Device-specific calibration files for 2.4GHz and 5GHz radios
+1. **WiFi Calibration Data** - Device-specific calibration files for 2.4GHz and 5GHz radios
+2. **Lantiq DSL Firmware** - VDSL modem driver vr9-B-dsl.bin / lantiq-vrx200-b.bin
 
-### Method 1: USB3 Firmware (xhcifw.mem)
-
-#### Option A: Download from Archive (Recommended)
-
-The Renesas USB3 firmware is available from Web Archive:
-
-```bash
-# Download archived version of denisandroid/uPD72020x-Firmware
-wget https://web.archive.org/web/20240316231746if_/https://codeload.github.com/denisandroid/uPD72020x-Firmware/tar.gz/refs/tags/1.0.0 \
-  -O uPD72020x-Firmware-1.0.0.tar.gz
-
-# Extract
-tar -xzf uPD72020x-Firmware-1.0.0.tar.gz
-
-# Copy firmware file (UPDATE.mem version 2.0.2.6)
-cp uPD72020x-Firmware-1.0.0/K2026090.mem firmware/xhcifw.mem
-
-# Cleanup
-rm -rf uPD72020x-Firmware-1.0.0 uPD72020x-Firmware-1.0.0.tar.gz
-```
-
-#### Option B: Extract from AVM Stock Firmware
-
-If you prefer to extract from official AVM firmware:
-
-1. Download AVM stock firmware from [AVM's FTP server](https://ftp.avm.de/fritzbox/fritzbox-7490/)
-2. Extract the firmware image (see WASP extraction below for tools)
-3. Copy `lib/firmware/xhcifw.mem` to your `firmware/` directory
-
-### Method 2: WASP WiFi Firmware (ath_tgt_fw1.fw)
-
-This firmware must be extracted from AVM stock firmware using specialized tools.
-
-#### Step 1: Install Required Tools
-
-**Option A: Using Freetz-NG (Recommended)**
-
-```bash
-# Clone Freetz-NG repository
-git clone https://github.com/Freetz-NG/freetz-ng
-cd freetz-ng
-
-# Install prerequisites and build tools
-tools/prerequisites make
-make tools
-
-# Copy the extraction tool
-cp tools/unsquashfs4-avm-be ..
-cd ..
-```
-
-**Option B: Pre-built Tool**
-
-If available, you can use a pre-built `unsquashfs4-avm-be` binary compatible with your system.
-
-#### Step 2: Download AVM Stock Firmware
-
-```bash
-# Example for Fritz.OS 7.57 (use latest available)
-wget https://download.avm.de/fritzbox/fritzbox-7490/deutschland/fritz.os/FRITZ.Box_7490-07.57.image
-
-# Or use FTP mirror
-wget https://ftp.avm.de/fritzbox/fritzbox-7490/deutschland/fritz.os/FRITZ.Box_7490-07.57.image
-```
-
-Check [AVM's download page](https://avm.de/service/fritzbox/fritzbox-7490/uebersicht/download/) for the latest firmware version.
-
-#### Step 3: Extract Firmware Files
-
-```bash
-# Extract filesystem.image from the main image
-7z e -o. FRITZ.Box_7490-07.57.image ./var/tmp/filesystem.image
-
-# Extract filesystem_core.squashfs from filesystem.image
-./unsquashfs4-avm-be -d extracted filesystem.image -e filesystem_core.squashfs
-
-# Extract ath_tgt_fw1.fw from filesystem_core.squashfs
-./unsquashfs4-avm-be extracted/filesystem_core.squashfs -e lib/firmware/ath_tgt_fw1.fw
-
-# Copy to firmware directory
-cp squashfs-root/lib/firmware/ath_tgt_fw1.fw firmware/
-```
-
-#### Alternative: Single-line Extraction
-
-```bash
-./unsquashfs4-avm-be -d temp1 filesystem.image -e filesystem_core.squashfs && \
-./unsquashfs4-avm-be temp1/filesystem_core.squashfs -e lib/firmware/ath_tgt_fw1.fw && \
-cp squashfs-root/lib/firmware/ath_tgt_fw1.fw firmware/
-```
-
-### Method 3: WiFi Calibration Data
+### Method 1: WiFi Calibration Data
 
 WiFi calibration data is **device-specific** and must be extracted from a running Lantiq OpenWrt system on your Fritz!Box 7490.
 
@@ -368,7 +156,7 @@ scp root@192.168.1.1:/lib/firmware/ath10k/cal-pci-0000:00:00.0.bin firmware/
 
 **Note**: These calibration files are generated by the Lantiq OpenWrt patches included in this repository. They are extracted from the hardware EEPROM on first boot.
 
-### Method 4: Lantiq DSL Firmware (lantiq-vrx200-b.bin)
+### Method 2: Lantiq DSL Firmware (lantiq-vrx200-b.bin)
 
 This firmware is typically included in OpenWrt's firmware feed and should be automatically downloaded during the build process. 
 
@@ -423,41 +211,11 @@ After extraction, your `firmware/` directory should contain:
 ```
 firmware/
 ├── ath9k-eeprom-ahb-18100000.wmac.bin    # From running Lantiq system
-├── ath_tgt_fw1.fw                        # From AVM stock firmware
+├── ath_tgt_fw1.fw                        # Provided in the latest tarballs from AVM (included)
 ├── cal-pci-0000:00:00.0.bin              # From running Lantiq system
-├── lantiq-vrx200-b.bin                   # From AVM stock firmware
-└── xhcifw.mem                            # From WebArchive
+├── lantiq-vrx200-b.bin                   # From OpenWrt repository
+└── xhcifw.mem                            # From GitHub (included)
 ```
-
-### Integrating Firmware into Build
-
-Once you have all firmware files in the `firmware/` directory:
-
-1. **For automated builds** (GitHub Actions / act):
-   - The workflow automatically copies firmware files from `firmware/` to the appropriate locations in the OpenWrt build tree
-   - No manual intervention needed
-
-2. **For manual builds**:
-   ```bash
-   # Copy to OpenWrt build tree before building
-   cd openwrt
-   
-   # USB firmware
-   mkdir -p target/linux/lantiq/xrx200/base-files/lib/firmware/
-   cp ../firmware/xhcifw.mem \
-     target/linux/lantiq/xrx200/base-files/lib/firmware/renesas_usb_fw.mem
-   
-   # WASP firmware
-   cp ../firmware/ath_tgt_fw1.fw \
-     target/linux/lantiq/xrx200/base-files/lib/firmware/netboot.fw
-   
-   # WiFi calibration (for WASP build)
-   mkdir -p target/linux/ath79/generic/base-files/lib/firmware/ath10k/
-   cp ../firmware/ath9k-eeprom-ahb-18100000.wmac.bin \
-     target/linux/ath79/generic/base-files/lib/firmware/
-   cp ../firmware/cal-pci-0000:00:00.0.bin \
-     target/linux/ath79/generic/base-files/lib/firmware/ath10k/
-   ```
 
 ### Troubleshooting Firmware Extraction
 
@@ -484,15 +242,16 @@ brew install p7zip
 #### Firmware extraction fails
 
 - Ensure you're using the correct AVM firmware version for Fritz!Box 7490
-- Try a different firmware version (older versions may use different squashfs formats)
 - Check that `unsquashfs4-avm-be` is executable: `chmod +x unsquashfs4-avm-be`
 
 ### References
 
 - [OpenWrt PR #5075 - Fritz!Box 7490 Support](https://github.com/openwrt/openwrt/pull/5075)
+- [OpenWrt Forum - Support Fritzbox 7490](https://forum.openwrt.org/t/support-fritzbox-7490/4112/)
 - [Freetz-NG Project](https://github.com/Freetz-NG/freetz-ng)
 - [AVM Firmware Downloads](https://avm.de/service/fritzbox/fritzbox-7490/uebersicht/download/)
-- [Renesas USB Firmware (Web Archive)](https://web.archive.org/web/20240316231746if_/https://codeload.github.com/denisandroid/uPD72020x-Firmware/tar.gz/refs/tags/1.0.0)
+- [Armbian Firmware GitHub Archive](https://github.com/armbian/firmware/tree/master)
+- [d-patch GitHub repo](https://github.com/d-patch/openwrt-fritz7490)
 
 ## Flashing Instructions
 
