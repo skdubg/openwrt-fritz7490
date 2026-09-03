@@ -63,7 +63,7 @@ The build includes custom patches, pre-configured network settings, WiFi mesh su
 └── secret-sync.sh             # Push secrets to GitHub repository
 ```
 
-## Build Method
+## Build the Images
 
 ### GitHub Actions
 
@@ -88,15 +88,15 @@ The build includes custom patches, pre-configured network settings, WiFi mesh su
    - Firmware images will be available as workflow artifacts
    - Both Lantiq and WASP images are built and integrated automatically
 
-### Required Firmware Files
+## Required and Extracting Firmware Files
 
-**⚠️ Legal Notice**: Due to licensing restrictions, proprietary firmware files cannot be distributed in this repository.
+**⚠️ Important**: Due to licensing restrictions, proprietary firmware files cannot be distributed in this repository.
 
 You need the following firmware files:
 - `ath9k-eeprom-ahb-18100000.wmac.bin` - WiFi calibration data (Extract from running Lantiq)
 - `cal-pci-0000:00:00.0.bin` - WiFi calibration data (Extract from running Lantiq)
 
-## Extracting Required Firmware Files
+**Note**: The calibration files in this repository are only placeholders. They are needed to build the Initial Lantiq image with GitHub Actions.
 
 ### Step 1: Build and Flash Initial Lantiq Image
 
@@ -104,7 +104,7 @@ Build and flash the Initial Lantiq image **without** WiFi support (WASP not yet 
 
 ### Step 2: Boot and Extract Calibration Files
 
-After flashing and booting into the Initial Lantiq Image:
+After booting into the Initial Lantiq image:
 
 ```bash
 # Connect to the device (default IP: 192.168.1.1)
@@ -114,12 +114,10 @@ ssh root@192.168.1.1
 ls -la /lib/firmware/ath9k-eeprom-ahb-18100000.wmac.bin
 ls -la /lib/firmware/ath10k/cal-pci-0000:00:00.0.bin
 
-# Copy them to your build machine
+# Extract them and upload to your GitHub repo
 scp root@192.168.1.1:/lib/firmware/ath9k-eeprom-ahb-18100000.wmac.bin firmware/
 scp root@192.168.1.1:/lib/firmware/ath10k/cal-pci-0000:00:00.0.bin firmware/
 ```
-
-**Note**: The calibration files in this repository are only placeholders. They are needed to build the Initial Lantiq image with GitHub Actions.
 
 ### Firmware Directory Structure
 
