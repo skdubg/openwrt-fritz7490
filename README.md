@@ -70,8 +70,8 @@ The build includes custom patches, pre-configured network settings, WiFi mesh su
 **⚠️ Legal Notice**: Due to licensing restrictions, proprietary firmware files cannot be distributed in this repository.
 
 You need the following firmware files:
-- `ath9k-eeprom-ahb-18100000.wmac.bin` - WiFi calibration data (extracted from running system)
-- `cal-pci-0000:00:00.0.bin` - WiFi calibration data (extracted from running system)
+- `ath9k-eeprom-ahb-18100000.wmac.bin` - WiFi calibration data (Extract from running Lantiq)
+- `cal-pci-0000:00:00.0.bin` - WiFi calibration data (Extract from running Lantiq)
 
 ## Build Method
 
@@ -123,17 +123,13 @@ ssh root@192.168.1.1
 # Check if calibration files exist
 ls -la /lib/firmware/ath9k-eeprom-ahb-18100000.wmac.bin
 ls -la /lib/firmware/ath10k/cal-pci-0000:00:00.0.bin
-```
 
-If the files exist, copy them to your build machine:
-
-```bash
-# From your build machine
+# Copy them to your build machine
 scp root@192.168.1.1:/lib/firmware/ath9k-eeprom-ahb-18100000.wmac.bin firmware/
 scp root@192.168.1.1:/lib/firmware/ath10k/cal-pci-0000:00:00.0.bin firmware/
 ```
 
-**Note**: These calibration files in this repository are only placeholders. You must extract it from the running Initial Lantiq.
+**Note**: The calibration files in this repository are only placeholders. They are needed to build the Initial Lantiq image with GitHub Actions.
 
 ### Firmware Directory Structure
 
