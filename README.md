@@ -63,16 +63,6 @@ The build includes custom patches, pre-configured network settings, WiFi mesh su
 └── secret-sync.sh             # Push secrets to GitHub repository
 ```
 
-## Prerequisites
-
-### Required Firmware Files
-
-**⚠️ Legal Notice**: Due to licensing restrictions, proprietary firmware files cannot be distributed in this repository.
-
-You need the following firmware files:
-- `ath9k-eeprom-ahb-18100000.wmac.bin` - WiFi calibration data (Extract from running Lantiq)
-- `cal-pci-0000:00:00.0.bin` - WiFi calibration data (Extract from running Lantiq)
-
 ## Build Method
 
 ### GitHub Actions
@@ -98,23 +88,23 @@ You need the following firmware files:
    - Firmware images will be available as workflow artifacts
    - Both Lantiq and WASP images are built and integrated automatically
 
+### Required Firmware Files
+
+**⚠️ Legal Notice**: Due to licensing restrictions, proprietary firmware files cannot be distributed in this repository.
+
+You need the following firmware files:
+- `ath9k-eeprom-ahb-18100000.wmac.bin` - WiFi calibration data (Extract from running Lantiq)
+- `cal-pci-0000:00:00.0.bin` - WiFi calibration data (Extract from running Lantiq)
+
 ## Extracting Required Firmware Files
 
-### Overview
+### Step 1: Build and Flash Initial Lantiq Image
 
-The Fritz!Box 7490 requires several proprietary firmware files for full functionality:
+Build and flash the Initial Lantiq image **without** WiFi support (WASP not yet configured). This initial image allows you to extract the calibration data.
 
-1. **WiFi Calibration Data** - Device-specific calibration files for 2.4GHz and 5GHz radios
+### Step 2: Boot and Extract Calibration Files
 
-WiFi calibration data is **device-specific** and must be extracted from a running Lantiq OpenWrt system on your Fritz!Box 7490.
-
-#### Step 1: Build and Flash Initial Lantiq Image
-
-First, build and flash the Initial Lantiq image **without** WiFi support (WASP not yet configured). This initial image allows you to extract the calibration data.
-
-#### Step 2: Boot and Extract Calibration Files
-
-After flashing and booting into the Lantiq OpenWrt:
+After flashing and booting into the Initial Lantiq Image:
 
 ```bash
 # Connect to the device (default IP: 192.168.1.1)
