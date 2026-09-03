@@ -17,7 +17,7 @@ The build includes custom patches, pre-configured network settings, WiFi mesh su
 - ✅ 802.11k/v (RRM, BSS Transition)
 - ✅ WiFi mesh support (802.11s with SAE encryption)
 - ✅ Pre-configured network, firewall, and system settings
-- ✅ Automated build pipeline (GitHub Actions + local via `act`)
+- ✅ Automated build pipeline (GitHub Actions)
 - ✅ Support for OpenWrt 24.10 and 25.12.4
 
 ## Repository Structure
@@ -60,7 +60,6 @@ The build includes custom patches, pre-configured network settings, WiFi mesh su
 ├── .config-wasp-25.12.4       # WASP config for OpenWrt 25.12.4
 ├── .github/workflows/
 │   └── build.yaml             # Automated build workflow
-├── run-local.sh               # Local build using act (GitHub Actions locally)
 └── secret-sync.sh             # Push secrets to GitHub repository
 ```
 
@@ -73,8 +72,6 @@ The build includes custom patches, pre-configured network settings, WiFi mesh su
 You need the following firmware files:
 - `ath9k-eeprom-ahb-18100000.wmac.bin` - WiFi calibration data (extracted from running system)
 - `cal-pci-0000:00:00.0.bin` - WiFi calibration data (extracted from running system)
-
-See the [Extracting Required Firmware Files](#extracting-required-firmware-files) section below for detailed instructions.
 
 ## Build Method
 
@@ -103,28 +100,17 @@ See the [Extracting Required Firmware Files](#extracting-required-firmware-files
 
 ## Extracting Required Firmware Files
 
-**⚠️ Important**: Due to licensing restrictions, proprietary firmware files cannot be distributed in this repository.
-
 ### Overview
 
 The Fritz!Box 7490 requires several proprietary firmware files for full functionality:
 
 1. **WiFi Calibration Data** - Device-specific calibration files for 2.4GHz and 5GHz radios
 
-### Method 1: WiFi Calibration Data
-
 WiFi calibration data is **device-specific** and must be extracted from a running Lantiq OpenWrt system on your Fritz!Box 7490.
 
 #### Step 1: Build and Flash Initial Lantiq Image
 
 First, build and flash the Lantiq image **without** WiFi support (WASP not yet configured). This initial image allows you to extract the calibration data.
-
-```bash
-# Build Lantiq-only image
-./run-local.sh 25.12.4 true true lantiq
-
-# Flash to your Fritz!Box 7490 (see Flashing Instructions below)
-```
 
 #### Step 2: Boot and Extract Calibration Files
 
